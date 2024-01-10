@@ -1,0 +1,196 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2758
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 #include <SoftwareSerial.h>\
+SoftwareSerial SIM900(11,12);\
+\
+#include <TinyGPS++.h>\
+\
+const int RXPin = 9, TXPin = 10;\
+const uint32_t GPSBaud = 9600; //Default baud of NEO-6M is 9600\
+\
+\
+TinyGPSPlus gps; // the TinyGPS++ object\
+SoftwareSerial ss(RXPin, TXPin); // the serial interface to the GPS device\
+ \
+#include <Wire.h> \
+#include <LiquidCrystal_I2C.h>\
+\
+#include <SPI.h>        //SPI library for communicate with the nRF24L01+ \
+#include "Wire.h"       //For communicate\
+#include "I2Cdev.h"     //For communicate with MPU6050\
+#include "MPU6050.h"    //The main library of the MPU6050\
+\
+// Set the LCD address to 0x27 for a 16 chars and 2 line display\
+LiquidCrystal_I2C lcd(0x27, 16, 2);\
+String long_lat;\
+\
+String Link;\
+String SMS;\
+ \
+float latitude;\
+float longitude;\
+ int push=5;\
+\
+ int buzzer=4; \
+MPU6050 mpu;\
+int16_t ax, ay, az;\
+int16_t gx, gy, gz;\
+int data[2];\
+\
+ \
+int m2=3;\
+int m1=6;\
+\
+ \
+\
+int get_location(String message)\{\
+  //    delay(500);\
+    \
+  SIM900.print("ATD +918639268514;\\r");\
+  delay(1000);\
+\
+  SIM900.print("AT+CMGF=1\\r");     // AT command to set SIM900 to SMS mode\
+  delay(100);\
+  SIM900.print("AT+CNMI=2,2,0,0,0\\r");       // Set module to send SMS data to serial out upon receipt\
+  delay(100);\
+    \
+  SIM900.println("AT+CMGF=1"); // Replace x with mobile number\
+  delay(1000);\
+  SIM900.println("AT+CMGS= \\"+918978582317\\"\\r"); // Replace * with mobile number  sim number - 8861273413\
+  delay(1000); \
+  SIM900.println(message);// The SMS text you want to send\
+  delay(100);\
+  SIM900.println((char)26);// ASCII code of CTRL+Z\
+\} \
+ \
+  \
+void panic()\
+\{\
+int switch11=digitalRead(push); \
+ mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);\
+ \
+  data[0] = map(ax, -17000, 17000, 300, 400 ); //Send X axis data\
+  data[1] = map(ay, -17000, 17000, 100, 200);  //Send Y axis data\
+if(switch11==0)\
+\{\
+  \
+   //long_lat = String(float(latitude))+","+String(float(longitude));\
+   long_lat = String(float(gps.location.lat()))+","+String(float(gps.location.lng()));\
+   \
+   Link = "https://www.google.com/maps/search/?api=1&query="+String(long_lat);\
+   SMS = "Alert: accident detected "+ long_lat + " " + Link;//////////////////////////////SMS message\
+       lcd.setCursor(0,0);\
+    lcd.print("crash detected"); \
+   digitalWrite(buzzer,HIGH); \
+   get_location(SMS); \
+    //  get_location1(SMS);\
+\}\
+else if(data[0] > 380 || data[0] < 310  || data[1] < 110 || data[1] > 180) \{ \
+  digitalWrite(buzzer,HIGH); \
+    lcd.setCursor(0,1);\
+    lcd.print("Accident detected"); \
+   long_lat = String(float(gps.location.lat()))+","+String(float(gps.location.lng()));\
+   Link = "https://www.google.com/maps/search/?api=1&query="+String(long_lat);\
+   SMS = "Alert: Tilt acc detected "+ long_lat + " " + Link;//////////////////////////////SMS message\
+   get_location(SMS);\
+   //get_location1(SMS);\
+ \}\
+else\
+\{      \
+  digitalWrite(buzzer,LOW); \
+         lcd.setCursor(0,0);\
+    lcd.print("                  "); \
+    lcd.setCursor(0,1);\
+    lcd.print("                  "); \
+  \}\
+  \}\
+\
+void displayInfo()\
+\{\
+  Serial.print(F("Location: ")); \
+  if (gps.location.isValid())\
+  \{\
+    Serial.print(gps.location.lat(), 6);\
+    Serial.print(F(","));\
+    Serial.print(gps.location.lng(), 6);\
+    \
+  \}\
+  else\
+  \{\
+    Serial.print(F("INVALID"));\
+  \}\
+\
+  Serial.print(F("  Date/Time: "));\
+  if (gps.date.isValid())\
+  \{\
+    Serial.print(gps.date.month());\
+    Serial.print(F("/"));\
+    Serial.print(gps.date.day());\
+    Serial.print(F("/"));\
+    Serial.print(gps.date.year());\
+  \}\
+  else\
+  \{\
+    Serial.print(F("INVALID"));\
+  \}\
+\
+  Serial.print(F(" "));\
+  if (gps.time.isValid())\
+  \{\
+    if (gps.time.hour() < 10) Serial.print(F("0"));\
+    Serial.print(gps.time.hour());\
+    Serial.print(F(":"));\
+    if (gps.time.minute() < 10) Serial.print(F("0"));\
+    Serial.print(gps.time.minute());\
+    Serial.print(F(":"));\
+    if (gps.time.second() < 10) Serial.print(F("0"));\
+    Serial.print(gps.time.second());\
+    Serial.print(F("."));\
+    if (gps.time.centisecond() < 10) Serial.print(F("0"));\
+    Serial.print(gps.time.centisecond());\
+  \}\
+  else\
+  \{\
+    Serial.print(F("INVALID"));\
+  \}\
+\
+  Serial.println();  \}\
+  \
+void setup() \{\
+  // put your setup code here, to run once:\
+  lcd.begin();\
+\
+  // Turn on the blacklight and print a message.\
+  lcd.backlight();\
+  Serial.begin(9600); \
+  SIM900.begin(9600);\
+  ss.begin(GPSBaud);\
+  Wire.begin();\
+  mpu.initialize();\
+  pinMode(buzzer,OUTPUT);\
+  pinMode(push,INPUT_PULLUP); \
+  pinMode(m2,OUTPUT);\
+    pinMode(m1,OUTPUT);\
+  \
+\}\
+\
+void loop() \{\
+  // put your main code here, to run repeatedly:\
+ \
+panic();\
+//adxl();  \
+  while (ss.available() > 0)\
+    if (gps.encode(ss.read()))\
+      displayInfo();\
+\
+  if (millis() > 5000 && gps.charsProcessed() < 10)\
+  \{\
+    Serial.println(F("No GPS detected: check wiring."));\
+    while(true);\
+  \} \
+\}}
