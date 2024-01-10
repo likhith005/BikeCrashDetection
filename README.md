@@ -40,5 +40,5 @@ The Bike Crash Detection project is aimed at detecting and alerting in case of a
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/BikeCrashDetection.git
+git clone https://github.com/likhith005/BikeCrashDetection.git
 cd bike-crash-detection
