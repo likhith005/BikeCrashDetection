@@ -20,13 +20,21 @@ The Bike Crash Detection project is aimed at detecting and alerting in case of a
 - Support for various camera sources (live feed, recorded videos).
 - Easy integration with existing surveillance systems.
 
-## Requirements
+# Requirements
+
+## Software
 
 - Python 3.x
 - OpenCV
 - TensorFlow (or any other preferred deep learning framework)
-- Other dependencies (listed in `requirements.txt`)
+- Other software dependencies (listed in `requirements.txt`)
 
+## Hardware
+
+- Compatible camera(s) or video feed source(s)
+- Accelerometer and/or gyroscope sensors
+- Microcontroller or hardware platform (e.g., Raspberry Pi, Arduino)
+- (Add any other hardware components or specifications relevant to your project)
 ## Installation
 
 1. Clone the repository:
